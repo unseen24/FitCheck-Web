@@ -14,9 +14,9 @@ _ATTIRE_HTML = "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap
  
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="FitCheck", layout="wide", initial_sidebar_state="collapsed")
- 
+
 # --- PATHS ---
-MODEL_PATH = Path(r"C:\\Users\\ferdi\\Downloads\\my_model\\my_model.pt")
+MODEL_PATH = Path(r"C:\\Users\\Renz\\Downloads\\my_model\\my_model.pt")
 LOGO_PATH = Path(__file__).parent / "logo.png"
 
 # --- LOGO ---
@@ -31,12 +31,13 @@ ph_datetime = datetime.datetime.now(ZoneInfo("Asia/Manila")).strftime("%a, %b %d
 @st.cache_resource
 def load_model(path: Path):
     return YOLO(str(path), task="detect")
- 
+
 # ─── GLOBAL CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
- 
+
+/* ── Reset & base ── */
 html, body, [class*="css"] {
     font-family: 'Outfit', sans-serif;
     background-color: #060c18 !important;
@@ -46,8 +47,12 @@ html, body, [class*="css"] {
     padding: 0 2rem 2rem !important;
     max-width: 1400px !important;
 }
+
+/* ── Hide default Streamlit header/footer ── */
 #MainMenu, footer, header { visibility: hidden; }
 .stDeployButton { display: none; }
+
+/* ── Tab bar ── */
 .stTabs [data-baseweb="tab-list"] {
     gap: 0;
     background: #0b1424;
@@ -74,6 +79,8 @@ html, body, [class*="css"] {
 }
 .stTabs [data-baseweb="tab-border"] { display: none; }
 .stTabs [data-baseweb="tab-highlight"] { display: none; }
+
+/* ── Metric cards ── */
 [data-testid="metric-container"] {
     background: linear-gradient(145deg, #0b1727, #0d1f35);
     border: 1px solid rgba(15, 157, 88, 0.2);
@@ -98,6 +105,8 @@ html, body, [class*="css"] {
     font-size: 2.2rem !important;
     font-weight: 800 !important;
 }
+
+/* ── Buttons ── */
 .stButton > button {
     background: linear-gradient(135deg, #0f9d58, #22c55e) !important;
     color: #fff !important;
@@ -117,6 +126,8 @@ html, body, [class*="css"] {
     box-shadow: 0 6px 20px rgba(15, 157, 88, 0.5) !important;
 }
 .stButton > button:active { transform: translateY(0); }
+
+/* Stop button – red accent */
 .stop-btn .stButton > button {
     background: linear-gradient(135deg, #b91c1c, #ef4444) !important;
     box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35) !important;
@@ -124,21 +135,41 @@ html, body, [class*="css"] {
 .stop-btn .stButton > button:hover {
     box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5) !important;
 }
+
+/* ── Slider ── */
+.stSlider [data-baseweb="slider"] {
+    padding: 0 4px;
+}
 .stSlider [role="slider"] {
     background: #0f9d58 !important;
     border: 2px solid #22c55e !important;
 }
+.stSlider [data-testid="stSlider"] label {
+    color: #a0b4c8 !important;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* ── Checkboxes ── */
 .stCheckbox label {
     color: #c0d4e8 !important;
     font-size: 14px !important;
     font-weight: 500;
 }
+.stCheckbox [data-baseweb="checkbox"] [data-checked="true"] {
+    background: #0f9d58 !important;
+    border-color: #0f9d58 !important;
+}
+
+/* ── Info / alerts ── */
 .stAlert {
     background: rgba(15, 157, 88, 0.08) !important;
     border: 1px solid rgba(15, 157, 88, 0.25) !important;
     border-radius: 10px !important;
     color: #a8e6c5 !important;
 }
+
+/* ── Section headings ── */
 h3 {
     font-size: 1.1rem !important;
     font-weight: 700 !important;
@@ -148,11 +179,15 @@ h3 {
     padding-bottom: 8px;
     border-bottom: 1px solid rgba(255,255,255,0.06);
 }
+
+/* ── Feed image ── */
 .stImage img {
     border-radius: 14px;
     border: 1px solid rgba(15, 157, 88, 0.2);
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
+
+/* ── Detection log text ── */
 .stMarkdown code, pre {
     font-family: 'DM Mono', monospace !important;
     background: rgba(255,255,255,0.04) !important;
@@ -162,7 +197,19 @@ h3 {
     font-size: 12.5px;
     padding: 2px 6px;
 }
+
+/* ── Columns gap ── */
 [data-testid="column"] { padding: 0 8px !important; }
+
+/* ── Live panel card ── */
+.live-controls {
+    background: #0b1727;
+    border: 1px solid rgba(15,157,88,0.15);
+    border-radius: 16px;
+    padding: 1.2rem 1rem;
+}
+
+/* ── Status pill ── */
 .status-pill {
     display: inline-flex;
     align-items: center;
@@ -188,8 +235,8 @@ h3 {
 }
 </style>
 """, unsafe_allow_html=True)
- 
- 
+
+
 # ─── TOP BAR ───────────────────────────────────────────────────────────────────
 html(
     f"""
@@ -199,6 +246,7 @@ html(
         <style>
             * {{ margin: 0; padding: 0; box-sizing: border-box; }}
             body {{ background: transparent; }}
+
             .top-bar {{
                 background: linear-gradient(180deg, #07101f 0%, #060c18 100%);
                 padding: 0 32px;
@@ -216,6 +264,7 @@ html(
                 height: 1px;
                 background: linear-gradient(90deg, transparent, #22c55e44, transparent);
             }}
+
             .logo-wrap {{
                 width: 44px; height: 44px; min-width: 44px;
                 border-radius: 12px;
@@ -242,6 +291,7 @@ html(
                 0% {{ background-position: 0% 50%; }}
                 100% {{ background-position: 200% 50%; }}
             }}
+
             .badge {{
                 background: rgba(15,157,88,0.1);
                 border: 1px solid rgba(15,157,88,0.25);
@@ -255,7 +305,9 @@ html(
                 text-transform: uppercase;
                 margin-top: 2px;
             }}
+
             .spacer {{ flex: 1; }}
+
             .datetime-wrap {{
                 display: flex;
                 flex-direction: column;
@@ -277,6 +329,7 @@ html(
                 color: #7a9ab0;
                 white-space: nowrap;
             }}
+
             .tip-badge {{
                 background: linear-gradient(135deg, #0a2010, #061810);
                 border: 1px solid rgba(15,157,88,0.2);
@@ -330,14 +383,14 @@ html(
     height=80,
     scrolling=False,
 )
- 
+
 # ─── MODEL CHECK ───────────────────────────────────────────────────────────────
 if not MODEL_PATH.exists():
     st.error("⚠️  Model file not found. Please verify the path to `my_model.pt`.")
     st.stop()
  
 model = load_model(MODEL_PATH)
- 
+
 # ─── SESSION STATE ──────────────────────────────────────────────────────────────
 if "running" not in st.session_state:
     st.session_state.running = False
@@ -346,18 +399,19 @@ if "running" not in st.session_state:
     st.session_state.frames_with_violations = 0
     st.session_state.detection_history = []
     st.session_state.inference_times = []
- 
+
 # ─── TABS ────────────────────────────────────────────────────────────────────────
 tab_labels = ["📊  Dashboard", "📷  Live", "📋  Logs", "📈  Reports", "⚙️  Settings"]
 tabs = st.tabs(tab_labels)
- 
- 
+
+
 # ═══════════════════════════════ DASHBOARD ══════════════════════════════════════
 with tabs[0]:
     scans = st.session_state.scans
     vframes = st.session_state.frames_with_violations
     compliance = 100 - int((vframes / scans) * 100) if scans else 100
- 
+
+    # Status pill
     is_live = st.session_state.running
     status_color = "#22c55e" if is_live else "#64748b"
     status_label = "DETECTION ACTIVE" if is_live else "DETECTION IDLE"
@@ -377,11 +431,12 @@ with tabs[0]:
         if st.session_state.inference_times else 0
     )
     c4.metric("⚡  Avg Inference", f"{avg_inf} ms")
- 
+
     st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
     st.markdown("### Recent Detections")
- 
+
     if st.session_state.detection_history:
+        # Show in a styled mono block
         entries = st.session_state.detection_history[:8]
         lines_html = "".join(
             f"<div style='padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-family:DM Mono,monospace;font-size:13px;color:#8ef56d'>"
@@ -479,22 +534,23 @@ with tabs[1]:
             unsafe_allow_html=True
         )
         st.markdown("### Controls")
- 
+
         confidence = st.slider("Confidence threshold", 0.1, 0.9, 0.3, 0.05)
- 
+
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
         if st.button("▶  Start Detection"):
             st.session_state.running = True
- 
+
         st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
         with st.container():
             st.markdown('<div class="stop-btn">', unsafe_allow_html=True)
             if st.button("■  Stop Detection"):
                 st.session_state.running = False
             st.markdown('</div>', unsafe_allow_html=True)
- 
+
         st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
- 
+
+        # Mini stats sidebar
         if st.session_state.scans:
             st.markdown(
                 f"""<div style='background:#060f1e;border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px'>
@@ -506,10 +562,11 @@ with tabs[1]:
                 unsafe_allow_html=True
             )
         st.markdown("</div>", unsafe_allow_html=True)
- 
+
     frame_placeholder = left.empty()
     log_placeholder = left.empty()
- 
+    alert_placeholder = left.empty() # Placeholder for audio alert
+
     if st.session_state.running:
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
@@ -525,28 +582,50 @@ with tabs[1]:
                 results = model(frame, conf=confidence)
                 inference_ms = int((time.time() - start) * 1000)
                 st.session_state.inference_times = [inference_ms] + st.session_state.inference_times[:99]
- 
+
                 annotated = results[0].plot()
                 frame_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
                 frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
- 
+
                 st.session_state.scans += 1
+                
+                # --- UPDATED FEATURE LOGIC WITH DELAY ---
+                if "v_counter" not in st.session_state:
+                    st.session_state.v_counter = 0
+
+                detected_labels = [model.names[int(box.cls[0])].lower() for box in results[0].boxes]
                 current = []
-                has_violation = False
- 
-                for box in results[0].boxes:
-                    class_id = int(box.cls[0])
-                    label = model.names[class_id]
-                    conf_val = float(box.conf[0])
-                    current.append(f"{label}: {conf_val:.2f}")
-                    has_violation = True
- 
-                if has_violation:
-                    st.session_state.frames_with_violations += 1
- 
+                
+                if "student" in detected_labels:
+                    missing = []
+                    if "id" not in detected_labels: missing.append("ID")
+                    if "black leather shoes" not in detected_labels: missing.append("Black Shoes")
+                    if "black slacks" not in detected_labels: missing.append("Black Slacks")
+                    
+                    if missing:
+                        # Increment counter (approx 30 frames = ~1.5 seconds of detection)
+                        st.session_state.v_counter += 1
+                        
+                        if st.session_state.v_counter >= 30:
+                            violation_msg = f"⚠️ VIOLATION: Missing {', '.join(missing)}"
+                            current.append(violation_msg)
+                            st.session_state.frames_with_violations += 1
+                            
+                            # Audio Alert (Click the page once after starting to enable browser audio)
+                            html("""<audio autoplay><source src="https://cdn.pixabay.com/audio/2021/08/04/audio_0625c1539c.mp3" type="audio/mpeg"></audio>""", height=0)
+                            
+                            st.session_state.v_counter = 0 # Reset so it doesn't log every single frame
+                    else:
+                        st.session_state.v_counter = 0
+                        current.append("✅ Compliance Verified")
+                else:
+                    st.session_state.v_counter = 0
+                    for label in detected_labels:
+                        current.append(f"Detected: {label}")
+
                 if current:
                     st.session_state.detection_history = current + st.session_state.detection_history[:29]
- 
+
                 log_placeholder.markdown(
                     "<div style='background:#0b1727;border:1px solid rgba(15,157,88,0.12);border-radius:10px;padding:10px 14px;margin-top:8px'>"
                     + "".join(
@@ -590,12 +669,12 @@ with tabs[2]:
             )
     else:
         st.info("No detection logs yet.")
- 
- 
+
+
 # ═══════════════════════════════ REPORTS ════════════════════════════════════════
 with tabs[3]:
     st.markdown("### Session Report")
- 
+
     scans = st.session_state.scans
     vframes = st.session_state.frames_with_violations
     compliance = 100 - int((vframes / scans) * 100) if scans else 100
@@ -603,7 +682,7 @@ with tabs[3]:
         int(sum(st.session_state.inference_times) / len(st.session_state.inference_times))
         if st.session_state.inference_times else 0
     )
- 
+
     r1, r2 = st.columns(2)
     with r1:
         st.metric("Frames Scanned", scans)
@@ -611,9 +690,10 @@ with tabs[3]:
     with r2:
         st.metric("Compliance Rate", f"{compliance}%")
         st.metric("Avg Inference Time", f"{avg_inf} ms")
- 
+
     if scans > 0:
         st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+        # Simple progress bar for compliance
         bar_color = "#22c55e" if compliance >= 80 else "#f59e0b" if compliance >= 50 else "#ef4444"
         st.markdown(
             f"""<div style='background:#0b1727;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px 20px'>
@@ -630,12 +710,12 @@ with tabs[3]:
             </div>""",
             unsafe_allow_html=True
         )
- 
- 
+
+
 # ═══════════════════════════════ SETTINGS ═══════════════════════════════════════
 with tabs[4]:
     st.markdown("### Settings")
- 
+
     st.markdown(
         "<div style='background:#0b1727;border:1px solid rgba(15,157,88,0.12);border-radius:14px;padding:20px 24px'>",
         unsafe_allow_html=True
@@ -648,8 +728,7 @@ with tabs[4]:
     st.checkbox("Record detection history to file", value=False)
     st.checkbox("Save annotated frames", value=False)
     st.markdown("</div>", unsafe_allow_html=True)
- 
+
     st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
     if st.button("💾  Save Settings"):
         st.success("Settings saved successfully.")
- 
