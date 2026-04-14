@@ -583,7 +583,12 @@ with tabs[1]:
                 inference_ms = int((time.time() - start) * 1000)
                 st.session_state.inference_times = [inference_ms] + st.session_state.inference_times[:99]
 
-                annotated = results[0].plot()
+                # Check if the user wants boxes
+                if st.session_state.get("show_boxes", True):
+                    annotated = results[0].plot()
+                else:
+                    annotated = frame.copy() # Just the clean camera image
+
                 frame_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
                 frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
 
@@ -611,10 +616,26 @@ with tabs[1]:
                             current.append(violation_msg)
                             st.session_state.frames_with_violations += 1
                             
-                            # Audio Alert (Click the page once after starting to enable browser audio)
-                            html("""<audio autoplay><source src="https://cdn.pixabay.com/audio/2021/08/04/audio_0625c1539c.mp3" type="audio/mpeg"></audio>""", height=0)
+                            # 1. Audio Alert
+                            if st.session_state.get("enable_audio", True):
+                                html("""<audio autoplay><source src="https://cdn.pixabay.com/audio/2021/08/04/audio_0625c1539c.mp3" type="audio/mpeg"></audio>""", height=0)
+
+                            # 2. Record to Text File (Force Write)
+                            if st.session_state.get("record_file", False):
+                                try:
+                                    with open("violation_history.txt", "a", encoding="utf-8") as f:
+                                        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                                        f.write(f"{timestamp}: {violation_msg}\n")
+                                        f.flush() # <--- This forces the computer to save the line NOW
+                                except Exception as e:
+                                    print(f"File Error: {e}")
+
+                            # 3. Save Screenshot
+                            if st.session_state.get("save_frames", False):
+                                img_name = f"violation_{int(time.time())}.jpg"
+                                cv2.imwrite(img_name, annotated)
                             
-                            st.session_state.v_counter = 0 # Reset so it doesn't log every single frame
+                            st.session_state.v_counter = 0
                     else:
                         st.session_state.v_counter = 0
                         current.append("✅ Compliance Verified")
@@ -722,11 +743,11 @@ with tabs[4]:
     )
     st.markdown("**Detection**")
     st.checkbox("Enable audio alerts on violation", value=True)
-    st.checkbox("Show bounding boxes on feed", value=True)
+    st.checkbox("Show bounding boxes on feed", value=True, key="show_boxes")
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
     st.markdown("**Data**")
-    st.checkbox("Record detection history to file", value=False)
-    st.checkbox("Save annotated frames", value=False)
+    st.checkbox("Record detection history to file", value=False, key="record_file")
+    st.checkbox("Save annotated frames", value=False, key="save_frames")
     st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
