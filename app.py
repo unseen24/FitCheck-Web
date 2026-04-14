@@ -1,9 +1,12 @@
 import time
 import base64
+import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import cv2
 import streamlit as st
+from streamlit.components.v1 import html
 from ultralytics import YOLO
 
 # --- PAGE CONFIG ---
@@ -19,75 +22,111 @@ if LOGO_PATH.exists():
     encoded_logo = base64.b64encode(LOGO_PATH.read_bytes()).decode("utf-8")
     logo_html = f'<img src="data:image/png;base64,{encoded_logo}" alt="FitCheck logo" />'
 
+ph_datetime = datetime.datetime.now(ZoneInfo("Asia/Manila")).strftime("%a, %b %d %Y · %I:%M:%S %p")
+
 # --- LOAD MODEL ---
 @st.cache_resource
 def load_model(path: Path):
     return YOLO(str(path), task="detect")
 
 # --- TOP BAR + CSS (FIXED) ---
-st.markdown(
+html(
     f"""
-    <style>
-    .top-bar {{
-        background: #050811;
-        padding: 20px 30px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
-    }}
+    <html>
+    <head>
+        <style>
+            .top-bar {{
+                background: #050811;
+                padding: 20px 30px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+            }}
 
-    .top-bar h1 {{
-        margin: 0;
-        font-size: 32px;
-        letter-spacing: 3px;
-        background: linear-gradient(90deg, #ffffff, #8ef56d, #ffffff);
-        background-size: 300% 100%;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: shine 3s linear infinite;
-    }}
+            .top-bar h1 {{
+                margin: 0;
+                font-size: 32px;
+                letter-spacing: 3px;
+                background: linear-gradient(90deg, #ffffff, #8ef56d, #ffffff);
+                background-size: 300% 100%;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                animation: shine 3s linear infinite;
+            }}
 
-    .top-bar .logo {{
-        width: 52px;
-        height: 52px;
-        min-width: 52px;
-        min-height: 52px;
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        border: 1px solid #0f9d58;
-        background: #0f172a;
-    }}
+            .top-bar .logo {{
+                width: 52px;
+                height: 52px;
+                min-width: 52px;
+                min-height: 52px;
+                border-radius: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                border: 1px solid #0f9d58;
+                background: #0f172a;
+            }}
 
-    .top-bar .logo img {{
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-    }}
+            .top-bar .logo img {{
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }}
 
-    .top-bar .logo span {{
-        color: #22c55e;
-        font-size: 26px;
-        font-weight: 800;
-    }}
+            .top-bar .logo span {{
+                color: #22c55e;
+                font-size: 26px;
+                font-weight: 800;
+            }}
 
-    @keyframes shine {{
-        0% {{ background-position: 0% 50%; }}
-        50% {{ background-position: 100% 50%; }}
-        100% {{ background-position: 0% 50%; }}
-    }}
+            .top-bar .datetime {{
+                margin-left: auto;
+                color: #a8bfc9;
+                font-size: 14px;
+                font-weight: 500;
+                white-space: nowrap;
+            }}
 
-    </style>
-
-    <div class="top-bar">
-        <div class="logo">{logo_html}</div>
-        <h1>FITCHECK</h1>
-    </div>
+            @keyframes shine {{
+                0% {{ background-position: 0% 50%; }}
+                50% {{ background-position: 100% 50%; }}
+                100% {{ background-position: 0% 50%; }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="top-bar">
+            <div class="logo">{logo_html}</div>
+            <h1>FITCHECK</h1>
+            <div class="datetime" id="ph-time">{ph_datetime}</div>
+        </div>
+        <script>
+            const phTarget = document.getElementById('ph-time');
+            function updatePHTime() {{
+                const now = new Date();
+                const opts = {{
+                    timeZone: 'Asia/Manila',
+                    weekday: 'short',
+                    month: 'short',
+                    day: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                }};
+                phTarget.textContent = new Intl.DateTimeFormat('en-US', opts).format(now).replace(/,/g, ' ·');
+            }}
+            updatePHTime();
+            setInterval(updatePHTime, 1000);
+        </script>
+    </body>
+    </html>
     """,
-    unsafe_allow_html=True,
+    height=120,
+    scrolling=False,
 )
 
 # --- CHECK MODEL ---
