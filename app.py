@@ -4,6 +4,7 @@ import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
  
+import matplotlib.pyplot as plt
 import cv2
 import streamlit as st
 from streamlit.components.v1 import html
@@ -16,7 +17,6 @@ _ATTIRE_HTML = "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap
 st.set_page_config(page_title="FitCheck", layout="wide", initial_sidebar_state="collapsed")
 
 # --- PATHS ---
-MODEL_PATH = Path(r"C:\\Users\\Renz\\Downloads\\my_model\\my_model.pt")
 LOGO_PATH = Path(__file__).parent / "logo.png"
 
 # --- LOGO ---
@@ -35,11 +35,19 @@ def load_model(path: Path):
 # ─── GLOBAL CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&display=swap');
+
+/* Force Dark Mode Variables */
+:root {
+    --primary-color: #0f9d58;
+    --background-color: #060c18;
+    --secondary-background-color: #0b1727;
+    --text-color: #e2eaf4;
+}
 
 /* ── Reset & base ── */
 html, body, [class*="css"] {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Libre Baskerville', serif;
     background-color: #060c18 !important;
     color: #e2eaf4 !important;
 }
@@ -64,7 +72,7 @@ html, body, [class*="css"] {
 .stTabs [data-baseweb="tab"] {
     border-radius: 9px;
     padding: 8px 24px;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Libre Baskerville', serif;
     font-weight: 600;
     font-size: 13px;
     letter-spacing: 0.5px;
@@ -110,7 +118,7 @@ html, body, [class*="css"] {
 .stButton > button {
     background: linear-gradient(135deg, #0f9d58, #22c55e) !important;
     color: #fff !important;
-    font-family: 'Outfit', sans-serif !important;
+    font-family: 'Libre Baskerville', serif !important;
     font-weight: 700 !important;
     font-size: 13px !important;
     letter-spacing: 0.5px;
@@ -242,7 +250,7 @@ html(
     f"""
     <html>
     <head>
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
         <style>
             * {{ margin: 0; padding: 0; box-sizing: border-box; }}
             body {{ background: transparent; }}
@@ -296,8 +304,8 @@ html(
                 background: rgba(15,157,88,0.1);
                 border: 1px solid rgba(15,157,88,0.25);
                 border-radius: 6px;
-                padding: 3px 9px;
-                font-family: Outfit, sans-serif;
+                padding: 4px 10px;
+                font-family: 'Libre Baskerville', serif;
                 font-size: 10px;
                 font-weight: 700;
                 letter-spacing: 1.5px;
@@ -315,7 +323,7 @@ html(
                 gap: 2px;
             }}
             .datetime-label {{
-                font-family: Outfit, sans-serif;
+                font-family: 'Libre Baskerville', serif;
                 font-size: 10px;
                 font-weight: 600;
                 letter-spacing: 1px;
@@ -323,7 +331,7 @@ html(
                 text-transform: uppercase;
             }}
             #ph-time {{
-                font-family: Outfit, sans-serif;
+                font-family: 'Libre Baskerville', serif;
                 font-size: 13px;
                 font-weight: 500;
                 color: #7a9ab0;
@@ -336,7 +344,7 @@ html(
                 border-radius: 8px;
                 padding: 6px 14px;
                 display: flex; align-items: center; gap: 8px;
-                font-family: Outfit, sans-serif;
+                font-family: 'Libre Baskerville', serif;
             }}
             .tip-dot {{
                 width: 8px; height: 8px;
@@ -383,6 +391,46 @@ html(
     height=80,
     scrolling=False,
 )
+
+def draw_weekly_chart(current_violations, chart_title="Weekly Violation"):
+    """Generates a compact, formal weekly violation chart."""
+    days_list = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    today_idx = datetime.datetime.today().weekday()
+    
+    # Initialize weekly data to zero; only 'today' will be updated with current detections
+    weekly_data = [0] * 7
+    
+    if today_idx < len(days_list):
+        weekly_data[today_idx] = current_violations
+
+    colors = ["#6AA9FF"] * len(weekly_data)
+    if today_idx < len(colors):
+        colors[today_idx] = "#FF4D6D" # Highlight today
+
+    plt.style.use("dark_background")
+    fig, ax = plt.subplots(figsize=(5, 2.2))
+    fig.patch.set_facecolor('#0b1727') 
+    ax.set_facecolor('#0b1727')
+    
+    # Apply formal font styling to chart elements
+    plt.rcParams['font.family'] = 'serif'
+
+    bars = ax.bar(days_list, weekly_data, color=colors, width=0.6)
+    for bar in bars:
+        h = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2, h + 0.3, str(int(h)), 
+                ha='center', color='white', fontsize=7, fontweight='bold')
+
+    # Dynamic title showing "Thursday: 3" style as requested
+    today_name = days_list[today_idx]
+    ax.set_title(f"{chart_title} | {today_name}: {int(current_violations)}", color="#6b84a0", fontsize=9, pad=10)
+    ax.tick_params(axis='both', which='major', labelsize=7, colors='#6b84a0', length=0)
+    
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    ax.yaxis.grid(True, linestyle='--', alpha=0.05)
+    plt.tight_layout()
+    return fig
 
 # ─── MODEL CHECK ───────────────────────────────────────────────────────────────
 if not MODEL_PATH.exists():
@@ -433,6 +481,8 @@ with tabs[0]:
     c4.metric("⚡  Avg Inference", f"{avg_inf} ms")
 
     st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
+    
+    st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
     st.markdown("### Recent Detections")
 
     if st.session_state.detection_history:
@@ -535,6 +585,13 @@ with tabs[1]:
         )
         st.markdown("### Controls")
 
+        input_mode = st.radio("Select Input Source:", ["Live Camera", "Upload Image"], horizontal=True)
+        
+        uploaded_file = None
+        if input_mode == "Upload Image":
+            uploaded_file = st.file_uploader("Choose an image for detection...", type=["jpg", "jpeg", "png"])
+            st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+
         confidence = st.slider("Confidence threshold", 0.1, 0.9, 0.3, 0.05)
 
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
@@ -550,24 +607,70 @@ with tabs[1]:
 
         st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-        # Mini stats sidebar
-        if st.session_state.scans:
-            st.markdown(
-                f"""<div style='background:#060f1e;border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px'>
-                    <div style='font-size:11px;color:#4a6a80;font-weight:600;letter-spacing:1px;margin-bottom:10px;text-transform:uppercase'>Session Stats</div>
-                    <div style='font-size:13px;color:#a0c4d8;margin-bottom:6px'>Frames: <b style='color:#fff'>{st.session_state.scans}</b></div>
-                    <div style='font-size:13px;color:#a0c4d8;margin-bottom:6px'>Violations: <b style='color:#f87171'>{st.session_state.frames_with_violations}</b></div>
-                    <div style='font-size:13px;color:#a0c4d8'>Inf. time: <b style='color:#8ef56d'>{avg_inf} ms</b></div>
-                </div>""",
-                unsafe_allow_html=True
-            )
+        # Placeholder for real-time stats updates during detection
+        stats_placeholder = st.empty()
+
+        def render_stats_ui():
+            if st.session_state.scans:
+                t_name = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][datetime.datetime.today().weekday()]
+                curr_avg_inf = int(sum(st.session_state.inference_times) / len(st.session_state.inference_times)) if st.session_state.inference_times else 0
+                stats_placeholder.markdown(
+                    f"""<div style='background:#060f1e;border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px'>
+                        <div style='font-size:11px;color:#4a6a80;font-weight:600;letter-spacing:1px;margin-bottom:10px;text-transform:uppercase'>Session Stats</div>
+                        <div style='font-size:13px;color:#a0c4d8;margin-bottom:6px'>Frames: <b style='color:#fff'>{st.session_state.scans}</b></div>
+                        <div style='font-size:13px;color:#a0c4d8;margin-bottom:6px'>{t_name}: <b style='color:#f87171'>{st.session_state.frames_with_violations}</b></div>
+                        <div style='font-size:13px;color:#a0c4d8'>Inf. time: <b style='color:#8ef56d'>{curr_avg_inf} ms</b></div>
+                    </div>""",
+                    unsafe_allow_html=True
+                )
+        
+        render_stats_ui()
         st.markdown("</div>", unsafe_allow_html=True)
 
     frame_placeholder = left.empty()
     log_placeholder = left.empty()
     alert_placeholder = left.empty() # Placeholder for audio alert
 
-    if st.session_state.running:
+    if st.session_state.running and input_mode == "Upload Image" and uploaded_file:
+        import numpy as np
+        # Process the uploaded static image
+        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+        frame = cv2.imdecode(file_bytes, 1)
+        
+        if frame is not None:
+            results = model(frame, conf=confidence)
+            annotated = results[0].plot()
+            frame_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+            frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
+            
+            st.session_state.scans += 1
+            detected_labels = [model.names[int(box.cls[0])].lower() for box in results[0].boxes]
+            
+            current = []
+            if "student" in detected_labels:
+                missing = [m for m, l in [("ID", "id"), ("Black Shoes", "black leather shoes"), ("Black Slacks", "black slacks")] if l not in detected_labels]
+                if missing:
+                    current.append(f"⚠️ VIOLATION: Missing {', '.join(missing)}")
+                    st.session_state.frames_with_violations += 1
+                else:
+                    current.append("✅ Compliance Verified")
+            else:
+                current.extend([f"Detected: {label}" for label in detected_labels])
+            
+            if current:
+                st.session_state.detection_history = current + st.session_state.detection_history[:29]
+            
+            log_placeholder.markdown(
+                "<div style='background:#0b1727;border:1px solid rgba(15,157,88,0.12);border-radius:10px;padding:10px 14px;margin-top:8px'>"
+                + "".join(f"<div style='font-family:DM Mono,monospace;font-size:12px;color:#8ef56d;padding:2px 0'><span style='color:#3a6a4a'>›</span> {d}</div>" for d in st.session_state.detection_history[:6])
+                + "</div>",
+                unsafe_allow_html=True
+            )
+            st.session_state.running = False # Reset state after single image process
+        else:
+            st.error("Failed to process uploaded image.")
+
+    elif st.session_state.running and input_mode == "Live Camera":
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
             st.error("Camera not accessible.")
@@ -583,12 +686,7 @@ with tabs[1]:
                 inference_ms = int((time.time() - start) * 1000)
                 st.session_state.inference_times = [inference_ms] + st.session_state.inference_times[:99]
 
-                # Check if the user wants boxes
-                if st.session_state.get("show_boxes", True):
-                    annotated = results[0].plot()
-                else:
-                    annotated = frame.copy() # Just the clean camera image
-
+                annotated = results[0].plot()
                 frame_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
                 frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
 
@@ -635,7 +733,7 @@ with tabs[1]:
                                 img_name = f"violation_{int(time.time())}.jpg"
                                 cv2.imwrite(img_name, annotated)
                             
-                            st.session_state.v_counter = 0
+                            st.session_state.v_counter = 0 # Reset so it doesn't log every single frame
                     else:
                         st.session_state.v_counter = 0
                         current.append("✅ Compliance Verified")
@@ -704,13 +802,35 @@ with tabs[3]:
         if st.session_state.inference_times else 0
     )
 
-    r1, r2 = st.columns(2)
-    with r1:
-        st.metric("Frames Scanned", scans)
-        st.metric("Violation Frames", vframes)
-    with r2:
-        st.metric("Compliance Rate", f"{compliance}%")
-        st.metric("Avg Inference Time", f"{avg_inf} ms")
+    st.markdown(f"""
+        <div style="
+            background: linear-gradient(145deg, #0b1727, #0d1f35);
+            border: 1.5px solid rgba(15, 157, 88, 0.4);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        ">
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px;">
+                <div>
+                    <div style="color: #6b84a0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-family: 'Libre Baskerville', serif;">Frames Scanned</div>
+                    <div style="color: #ffffff; font-size: 2.5rem; font-weight: 800; font-family: 'Libre Baskerville', serif;">{scans}</div>
+                </div>
+                <div>
+                    <div style="color: #6b84a0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-family: 'Libre Baskerville', serif;">Compliance Rate</div>
+                    <div style="color: #22c55e; font-size: 2.5rem; font-weight: 800; font-family: 'Libre Baskerville', serif;">{compliance}%</div>
+                </div>
+                <div>
+                    <div style="color: #6b84a0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-family: 'Libre Baskerville', serif;">Violation Frames</div>
+                    <div style="color: #f87171; font-size: 2.5rem; font-weight: 800; font-family: 'Libre Baskerville', serif;">{vframes}</div>
+                </div>
+                <div>
+                    <div style="color: #6b84a0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-family: 'Libre Baskerville', serif;">Avg Inference Time</div>
+                    <div style="color: #8ef56d; font-size: 2.5rem; font-weight: 800; font-family: 'Libre Baskerville', serif;">{avg_inf} <span style="font-size: 1.2rem; font-weight: 400; color: #5a7a90;">ms</span></div>
+                </div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
     if scans > 0:
         st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
@@ -732,6 +852,15 @@ with tabs[3]:
             unsafe_allow_html=True
         )
 
+    # ── Weekly Chart ───────────────────────────────────────────────────────────
+    st.markdown("<div style='height:2rem'></div>", unsafe_allow_html=True)
+    st.markdown("### Weekly Trends")
+    
+    r_left, r_mid, r_right = st.columns([1, 2, 1])
+    with r_mid:
+        fig_report = draw_weekly_chart(st.session_state.frames_with_violations)
+        st.pyplot(fig_report, use_container_width=True)
+
 
 # ═══════════════════════════════ SETTINGS ═══════════════════════════════════════
 with tabs[4]:
@@ -743,11 +872,11 @@ with tabs[4]:
     )
     st.markdown("**Detection**")
     st.checkbox("Enable audio alerts on violation", value=True)
-    st.checkbox("Show bounding boxes on feed", value=True, key="show_boxes")
+    st.checkbox("Show bounding boxes on feed", value=True)
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
     st.markdown("**Data**")
-    st.checkbox("Record detection history to file", value=False, key="record_file")
-    st.checkbox("Save annotated frames", value=False, key="save_frames")
+    st.checkbox("Record detection history to file", value=False)
+    st.checkbox("Save annotated frames", value=False)
     st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
